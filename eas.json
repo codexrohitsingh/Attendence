@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 16.17.4",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "credentialsSource": "local"
+      },
+      "env": {
+        "MYAPP_RELEASE_STORE_FILE": "../../my-release-key.keystore",
+        "MYAPP_RELEASE_KEY_ALIAS": "my-key-alias",
+        "MYAPP_RELEASE_STORE_PASSWORD": "codex123",
+        "MYAPP_RELEASE_KEY_PASSWORD": "codex123"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
