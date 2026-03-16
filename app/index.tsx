@@ -1,204 +1,178 @@
-import { Picker } from '@react-native-picker/picker';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import React, { useRef, useState } from 'react';
-import { Button, FlatList, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Index() {
-  const [text, setText] = useState('');
-  const [item, setItem] = useState<string[]>([]);
-   const [selectedSubject, setSelectedSubject] = useState('DE');
-const inputRef = useRef<TextInput>(null);
-  function handleAddItem() {
-    if (text.trim() !== '') {
-      setItem([...item, text]);
-      setText('');
-      inputRef.current?.focus();
-    }
-  }
- async function handleSortItems() {
-  const uniqueItems = [...new Set(item)];
-  const sortedItems = uniqueItems.sort((a, b) => parseInt(a) - parseInt(b));
-  setItem(sortedItems);
+export default function Home() {
+  const router = useRouter();
 
-  const currentDateTime = new Date();
-  const dateStr = currentDateTime.toISOString().split('T')[0]; // YYYY-MM-DD format
-  const timeStr = currentDateTime.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS format
-  const fileName = `${selectedSubject}_${dateStr}_${timeStr}.txt`;
-   const totalCount = sortedItems.length;
-   const fileContent = `The total number of count is ${totalCount}\n\n${sortedItems.join('\n')}`; // add total count at top
+  const handleTakeAttendance = () => {
+    router.push('/take-attendance');
+  };
 
-  try {
-     if (Platform.OS === 'web') {
-       // Web browser - trigger download
-       const blob = new Blob([fileContent], { type: 'text/plain' });
-       const url = URL.createObjectURL(blob);
-       const link = document.createElement('a');
-       link.href = url;
-       link.download = fileName;
-       document.body.appendChild(link);
-       link.click();
-       document.body.removeChild(link);
-       URL.revokeObjectURL(url);
-       console.log(`File ${fileName} downloaded successfully`);
-       alert(`File ${fileName} downloaded successfully`);
-     } else {
-       // Mobile device - save to file system
-       const filePath = `${FileSystem.documentDirectory}${fileName}`;
-       await FileSystem.writeAsStringAsync(filePath, fileContent);
-       console.log(`File ${fileName} written successfully at ${filePath}`);
-       alert(`File saved as ${fileName}`);
-     }
-     
-     // Clear the data after successful file operation
-     setItem([]);
-     setText('');
-     inputRef.current?.focus();
-  } catch (err) {
-     console.log('File operation error:', (err as Error).message);
-     alert('Error saving file.');
-   }
-}
+  const handleViewAllAttendance = () => {
+    router.push('/view-attendance');
+  };
 
- async function handleWhatsAppShare() {
-  const uniqueItems = [...new Set(item)];
-  const sortedItems = uniqueItems.sort((a, b) => parseInt(a) - parseInt(b));
-  setItem(sortedItems);
-
-  const currentDateTime = new Date();
-   const dateStr = currentDateTime.toISOString().split('T')[0]; // YYYY-MM-DD format
-   const timeStr = currentDateTime.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS format
-   const fileName = `${selectedSubject}_${dateStr}_${timeStr}.txt`;
-    const totalCount = sortedItems.length;
-    const fileContent = `The total number of count is ${totalCount}\n\n${sortedItems.join('\n')}`; // add total count at top
-
-  try {
-     if (Platform.OS === 'web') {
-       // Web browser - trigger download and WhatsApp Web
-       const blob = new Blob([fileContent], { type: 'text/plain' });
-       const url = URL.createObjectURL(blob);
-       const link = document.createElement('a');
-       link.href = url;
-       link.download = fileName;
-       document.body.appendChild(link);
-       link.click();
-       document.body.removeChild(link);
-       URL.revokeObjectURL(url);
-       
-       // Open WhatsApp Web with the content
-        const whatsappMessage = encodeURIComponent(`Attendance for ${selectedSubject} (${dateStr} ${timeStr.replace(/-/g, ':')}):\n${fileContent}`);
-       const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
-       window.open(whatsappUrl, '_blank');
-       
-       console.log(`File ${fileName} downloaded and WhatsApp opened`);
-       alert(`File ${fileName} downloaded and WhatsApp opened`);
-     } else {
-       // Mobile device - save to file system and share to WhatsApp
-       const filePath = `${FileSystem.documentDirectory}${fileName}`;
-       await FileSystem.writeAsStringAsync(filePath, fileContent);
-       
-       // Share file to WhatsApp
-       const isAvailable = await Sharing.isAvailableAsync();
-       if (isAvailable) {
-         await Sharing.shareAsync(filePath, {
-           mimeType: 'text/plain',
-           dialogTitle: 'Share attendance file to WhatsApp'
-         });
-         console.log(`File ${fileName} shared to WhatsApp`);
-         alert(`File shared to WhatsApp`);
-       } else {
-         alert('Sharing is not available on this device');
-       }
-     }
-     
-     // Clear the data after successful file operation
-     setItem([]);
-     setText('');
-     inputRef.current?.focus();
-  } catch (err) {
-     console.log('WhatsApp share error:', (err as Error).message);
-     alert('Error sharing file to WhatsApp.');
-   }
-}
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Select Subject:</Text>
-      <Picker
-        selectedValue={selectedSubject}
-        onValueChange={(itemValue) => setSelectedSubject(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="DE" value="DE" />
-        <Picker.Item label="PA" value="PA" />
-        <Picker.Item label="PA LAB" value="PA LAB" />
-        <Picker.Item label="FLAT" value="FLAT" />
-        <Picker.Item label="SSIC" value="SSIC" />
-      </Picker>
-      <TextInput
-      ref={inputRef}
-      blurOnSubmit={false} 
-        style={styles.input}
-        placeholder="Type something..."
-        value={text}
-        onChangeText={setText}
-        onSubmitEditing={handleAddItem}
-        returnKeyType="done"
-      />
- <Text style={styles.totalCount}>Total Count: {item.length}</Text>
-      <View style={styles.buttonContainer}>
-        <Button title="End" onPress={handleSortItems} />
-        <Button title="WhatsApp" onPress={handleWhatsAppShare} color="#25D366" />
-      </View> 
-      <FlatList
-        data={item}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => <Text style={styles.item}>{item}</Text>}
-      />
-
-      <Text>Hi this is Rohit singh from dev team</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="school" size={40} color="#3498db" />
+          </View>
+          <Text style={styles.title}>Attendance Tracker</Text>
+          <Text style={styles.subtitle}>Streamline your student management with ease</Text>
+        </View>
+        
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.button, styles.primaryButton]} 
+            onPress={handleTakeAttendance}
+            activeOpacity={0.8}
+          >
+            <View style={styles.buttonIcon}>
+              <Ionicons name="add-circle" size={24} color="white" />
+            </View>
+            <View style={styles.buttonTextContainer}>
+              <Text style={styles.buttonTitle}>Take Attendance</Text>
+              <Text style={styles.buttonDesc}>Mark new student attendance</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.button, styles.secondaryButton]} 
+            onPress={handleViewAllAttendance}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.buttonIcon, styles.secondaryIconBg]}>
+              <Ionicons name="list" size={24} color="#3498db" />
+            </View>
+            <View style={styles.buttonTextContainer}>
+              <Text style={styles.buttonTitleSecondary}>View History</Text>
+              <Text style={styles.buttonDescSecondary}>Review and manage records</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2024 Attendance Tracker Pro</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: 50,
+    backgroundColor: '#f8fafc',
   },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    width: '100%',
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
   },
-  item: {
-    fontSize: 18, 
-    marginBottom: 5,
+  header: {
+    alignItems: 'center',
+    marginBottom: 48,
   },
-  label: {
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  subtitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-    marginBottom: 15,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 10,
+    width: '100%',
+    gap: 16,
   },
-  totalCount: {
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  primaryButton: {
+    backgroundColor: '#3498db',
+  },
+  secondaryButton: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  buttonIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  secondaryIconBg: {
+    backgroundColor: '#eff6ff',
+  },
+  buttonTextContainer: {
+    flex: 1,
+  },
+  buttonTitle: {
+    color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 15,
-    color: '#333',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  buttonDesc: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  buttonTitleSecondary: {
+    color: '#1e293b',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  buttonDescSecondary: {
+    color: '#64748b',
+    fontSize: 14,
+  },
+  footer: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontWeight: '500',
   },
 });
